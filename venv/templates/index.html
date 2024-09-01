@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Application</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 50px; }
+        form { max-width: 400px; margin: auto; }
+        input, select, button { width: 100%; padding: 10px; margin: 10px 0; }
+        .alert { padding: 10px; margin-bottom: 20px; }
+        .alert-success { background-color: #dff0d8; color: #3c763d; }
+        .alert-danger { background-color: #f2dede; color: #a94442; }
+    </style>
+</head>
+<body>
+    <h1>SaaS Subscription</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form action="/subscribe" method="POST" id="payment-form">
+        <label for="email">Email</label>
+        <input type="email" name="email" id="email" required>
+
+        <label for="plan">Choose a Plan</label>
+        <select name="plan" id="plan">
+            <option value="plan_basic">Basic - $10/month</option>
+            <option value="plan_pro">Pro - $20/month</option>
+            <option value="plan_enterprise">Enterprise - $50/month</option>
+        </select>
+
+        <label for="card-element">Credit or debit card</label>
+        <div id="card-element"></div>
+
+        <button type="submit">Submit Payment</button>
+        <input type="hidden" name="stripeToken" id="stripeToken">
+    </form>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        var stripe = Stripe('{{ key }}');
+        var elements = stripe.elements();
+        var card = elements.create('card');
+        card.mount('#card-element');
+
+        var form = document.getElementById('payment-form');
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            stripe.createToken(card).then(function(result) {
+                if (result.error) {
+                    console.log(result.error.message);
+                } else {
+                    var hiddenInput = document.getElementById('stripeToken');
+                    hiddenInput.value = result.token.id;
+                    form.submit();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
